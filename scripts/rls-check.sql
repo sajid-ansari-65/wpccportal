@@ -314,6 +314,74 @@ savepoint role_block_4;
 rollback to savepoint role_block_4;
 
 -- ---------------------------------------------------------------------------
+-- Invites. An admin must not be able to reach ownership through them, and an
+-- owner must not lose it by opening a lower-role link.
+--
+-- Surat's owner is made an ADMIN of the tripwire org for this block only, so
+-- it does not disturb what block 3 asserts about them.
+-- ---------------------------------------------------------------------------
+savepoint role_block_6;
+  insert into portal.memberships (org_id, user_id, role)
+  values ('99999999-9999-9999-9999-999999999999',
+          'aaaaaaaa-0000-0000-0000-00000000000a', 'admin');
+
+  -- An owner invite an admin issued before the policy existed, written here
+  -- as superuser because the policy now refuses exactly this.
+  insert into portal.invitations (org_id, role, token, max_uses, created_by)
+  values ('99999999-9999-9999-9999-999999999999', 'owner',
+          'rls-check-legacy-owner-invite', 1,
+          'aaaaaaaa-0000-0000-0000-00000000000a');
+
+  -- An admin invite, to be opened by the tripwire's only owner.
+  insert into portal.invitations (org_id, role, token, max_uses, created_by)
+  values ('99999999-9999-9999-9999-999999999999', 'admin',
+          'rls-check-admin-invite', 5,
+          'cccccccc-0000-0000-0000-00000000000c');
+
+  set local role authenticated;
+  set local request.jwt.claims = '{"sub":"aaaaaaaa-0000-0000-0000-00000000000a","role":"authenticated"}';
+
+  select pg_temp.expect_rows_affected('admin CAN create an admin invite', $q$
+    insert into portal.invitations (org_id, role, max_uses)
+    values ('99999999-9999-9999-9999-999999999999', 'admin', 1)
+  $q$, 1);
+
+  select pg_temp.expect_denied('admin cannot create an owner invite', $q$
+    insert into portal.invitations (org_id, role, max_uses)
+    values ('99999999-9999-9999-9999-999999999999', 'owner', 1)
+  $q$);
+
+  select pg_temp.expect_denied('admin cannot forge created_by on an invite', $q$
+    insert into portal.invitations (org_id, role, max_uses, created_by)
+    values ('99999999-9999-9999-9999-999999999999', 'admin', 1,
+            'cccccccc-0000-0000-0000-00000000000c')
+  $q$);
+
+  select pg_temp.expect_rows_affected('admin cannot turn an invite into an owner invite', $q$
+    update portal.invitations set role = 'owner'
+     where token = 'rls-check-admin-invite'
+  $q$, 0);
+
+  select pg_temp.expect_denied('admin cannot accept an owner invite an admin issued', $q$
+    select portal.accept_invite('rls-check-legacy-owner-invite')
+  $q$);
+
+  select pg_temp.expect('admin is still only an admin',
+    (select count(*) from portal.memberships
+      where org_id = '99999999-9999-9999-9999-999999999999'
+        and user_id = 'aaaaaaaa-0000-0000-0000-00000000000a' and role = 'owner'), 0);
+
+  set local request.jwt.claims = '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}';
+
+  select portal.accept_invite('rls-check-admin-invite');
+
+  select pg_temp.expect('owner opening an admin invite stays owner',
+    (select count(*) from portal.memberships
+      where org_id = '99999999-9999-9999-9999-999999999999'
+        and user_id = 'cccccccc-0000-0000-0000-00000000000c' and role = 'owner'), 1);
+rollback to savepoint role_block_6;
+
+-- ---------------------------------------------------------------------------
 -- Signed out. Nothing at all.
 -- ---------------------------------------------------------------------------
 savepoint role_block_5;
