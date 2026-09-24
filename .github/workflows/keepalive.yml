@@ -1,0 +1,34 @@
+# Supabase pauses a free-tier project after ~7 days of inactivity. The SaaS
+# build runs for months, during which the live portal at wpccportal.vercel.app
+# gets almost no traffic — so without this ping the database would quietly go
+# to sleep and the old app would start failing while nobody is looking.
+#
+# Why here and not in a Vercel cron: adding a cron means deploying to the app
+# we have deliberately stopped deploying to. At cutover the Vercel cron takes
+# over and this can stay as a second pinger.
+#
+# NOTE: GitHub only runs scheduled workflows from the DEFAULT branch, and it
+# disables them entirely in repos with no commits for 60 days. This file must
+# therefore live on `main`, not on a feature branch.
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # daily; off the hour, where runner queues are shorter
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "Supabase responded HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Keepalive failed — the project may be paused or the key rotated."
+            exit 1
+          fi

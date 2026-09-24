@@ -1,12 +1,21 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # dependencies
 /node_modules
 /.pnp
 .pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
 
 # next.js
 /.next/
 /out/
-next-env.d.ts
 
 # production
 /build
@@ -21,12 +30,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — NEVER commit these (service role key lives here)
-.env
-.env*.local
+# env files (can opt-in for committing if needed)
+.env*
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
+next-env.d.ts
+
+# playwright-mcp scratch output
+.playwright-mcp/
+*-390*.png
+confirm-*.png

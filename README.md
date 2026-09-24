@@ -1,47 +1,36 @@
-# WPCC Surat 2026 — Registration & Attendance Portal
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Kya hai isme
-- **Import**: XLS/CSV registration sheet upload → students DB mein
-- **Attendance**: search-tap se manual mark, ya student apna QR scan kare (self check-in)
-- **Scan tab**: volunteer camera se student ka QR scan karke mark kar sakta hai
-- **Student QR Codes tab**: har student ka QR print/generate karo, unhe bhejo (email/WhatsApp) ya entry pass ban jaaye
-- **Export**: present students ki CSV → Canva Bulk Create mein daal ke certificates generate karo
+## Getting Started
 
-## Setup — 15 min
+First, run the development server:
 
-### 1. Supabase project banao
-1. https://supabase.com → New Project (free tier chalega)
-2. Project ready hone ke baad: **SQL Editor** → naya query → `supabase-schema.sql` ka pura content paste karke Run karo
-3. **Project Settings → API** se copy karo:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `service_role` key (secret one, anon nahi) → `SUPABASE_SERVICE_ROLE_KEY`
-
-### 2. Local pe test (optional)
 ```bash
-npm install
-cp .env.local.example .env.local
-# .env.local mein apni Supabase URL, key, aur ADMIN_PASSWORD daal do
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-http://localhost:3000 pe khulega.
 
-### 3. Vercel pe deploy
-1. Is folder ko GitHub repo bana ke push karo (ya seedha `vercel` CLI se folder deploy karo)
-2. https://vercel.com → New Project → repo import karo
-3. **Environment Variables** mein teeno daal do:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `ADMIN_PASSWORD`
-4. Deploy — 2 min mein live link mil jayega
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Event day flow
-1. `/dashboard` pe login karo (ADMIN_PASSWORD se)
-2. **Import XLS** tab se registration sheet upload karo
-3. Agar QR wala flow use karna hai: **Student QR Codes** tab se sabke QR print/share kar do event se pehle
-4. Event ke din: volunteer **Attendance** tab se search-tap kare, ya **Scan QR** tab se camera se scan kare, ya students khud apna QR scan karke self check-in kar sakte hain
-5. End mein **Export CSV** se present list nikal ke Canva Bulk Create mein daal do → certificates generate
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Notes
-- Password ek hi hai sab volunteers ke liye (simple rakha hai) — agar alag-alag login chahiye future mein toh bata dena, add kar denge
-- Data permanent Supabase mein rehta hai, future events ke liye same portal reuse ho sakta hai (bas naya `event_id` wala filter add karna padega jab do events ek saath chalane ho)
-- QR scan wala flow HTTPS pe hi kaam karega (Vercel automatically HTTPS deta hai, so no issue after deploy)
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

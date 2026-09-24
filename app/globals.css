@@ -1,20 +1,84 @@
 @import "tailwindcss";
 
-/* WordPress Campus Connect palette — taken from the event site's
-   --wp--preset--color--* custom properties. */
+/* ---------------------------------------------------------------------------
+   WordPress Campus Connect palette, taken from the event site's
+   --wp--preset--color--* custom properties.
+
+   Orange has exactly one job in this interface: the destructive confirmation
+   when someone is being un-marked. It is not a decorative accent, and it does
+   not appear anywhere else, so that seeing it always means the same thing.
+   --------------------------------------------------------------------------- */
 :root {
-  --background: #f2f6ff; /* custom-bg */
-  --foreground: #1a1919; /* charcoal-0 */
+  --bg: #f2f6ff;
+  --surface: #ffffff;
+  --surface-sunk: #e9eefc;
+
+  --ink: #1a1919;
+  --ink-muted: #40464d;
+  --ink-faint: #646970;
+
+  --wp-blue: #3858e9;
+  --wp-blue-dark: #022f8c;
+  --wp-blue-pale: #dee4ff;
+
+  --orange: #f15a25;
+
+  --line: #c9d4f9;
+  --line-soft: #e4eafb;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-wp: var(--wp-blue);
+  --color-wp-dark: var(--wp-blue-dark);
+  --color-wp-pale: var(--wp-blue-pale);
+
+  --color-orange: var(--orange);
+
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+
   --font-sans: var(--font-inter);
 }
 
+html {
+  /* iOS Safari zooms any input under 16px. Everything typed into is at least
+     that, and the page must not shift under a volunteer's thumb. */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Counts sit next to each other and change as people are marked; proportional
+   digits make them jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible keyboard focus everywhere, without drawing a ring on mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--wp-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

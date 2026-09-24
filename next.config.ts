@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // A stray yarn.lock in the home directory makes Turbopack guess the wrong
+  // workspace root. Pin it to this project.
+  turbopack: {
+    root: import.meta.dirname,
+  },
 };
 
 export default nextConfig;

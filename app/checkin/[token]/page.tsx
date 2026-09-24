@@ -1,186 +1,73 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import HandleForm from "./HandleForm";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { normalizeWpUsername, wpUsernameError } from "@/lib/wpUsername";
+type Result = {
+  attendee_name: string;
+  event_name: string;
+  session_name: string;
+  collect_username: boolean;
+  already_present: boolean;
+};
 
-type Phase = "loading" | "ready" | "invalid";
+/**
+ * Public self check-in. Anonymous, and the URL is what 187 printed QR codes
+ * point at — the path never changes.
+ *
+ * Attendance is recorded first and the optional question comes second, so
+ * closing the page without answering never costs anyone their attendance.
+ * Recording during render is safe here precisely because the RPC is
+ * idempotent: a second call is a no-op, not a second mark.
+ */
+export default async function CheckinPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
 
-export default function CheckinPage() {
-  const params = useParams();
-  const token = params.token as string;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("checkin_by_token", { p_token: token });
+  const row = (data as Result[] | null)?.[0];
 
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [name, setName] = useState("");
-  const [wasAlready, setWasAlready] = useState(false);
-
-  const [handle, setHandle] = useState("");
-  const [saved, setSaved] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Attendance is recorded the moment the page opens. The username is asked
-  // for afterwards so that abandoning the form never costs a student their
-  // attendance.
-  useEffect(() => {
-    fetch("/api/checkin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    })
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) return setPhase("invalid");
-        setName(body.student.name);
-        setWasAlready(Boolean(body.alreadyMarked));
-        if (body.student.wp_username) {
-          setHandle(body.student.wp_username);
-          setSaved(body.student.wp_username);
-        }
-        setPhase("ready");
-      })
-      .catch(() => setPhase("invalid"));
-  }, [token]);
-
-  const save = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      const normalized = normalizeWpUsername(handle);
-      const problem = wpUsernameError(normalized);
-      if (problem) return setError(problem);
-      if (!normalized) return setError("Type your username first.");
-
-      setError(null);
-      setSaving(true);
-      const res = await fetch("/api/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, wpUsername: normalized }),
-      });
-      const body = await res.json();
-      setSaving(false);
-      if (!res.ok) return setError(body.error || "That did not save. Try again.");
-      setHandle(normalized);
-      setSaved(normalized);
-    },
-    [handle, token]
-  );
-
-  const firstName = name.split(/\s+/)[0] || name;
+  if (error || !row) {
+    const closed = error?.message?.includes("not open");
+    return (
+      <Shell>
+        <h1 className="text-[22px] font-semibold text-ink">
+          {closed ? "Check-in isn’t open" : "We don’t recognise that code"}
+        </h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">
+          {closed
+            ? "This code is valid, but nothing is accepting check-ins right now. Try again when the session starts."
+            : "Check you scanned the whole code. If it keeps failing, show this screen to someone on the desk."}
+        </p>
+      </Shell>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-[#f2f6ff] px-4 py-10 flex justify-center">
-      <div className="w-full max-w-sm">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/wcc-logo.png"
-          alt="WordPress Campus Connect"
-          className="h-9 w-auto mx-auto mb-8"
-        />
+    <Shell>
+      <p className="text-[13px] text-ink-faint">{row.event_name}</p>
+      <h1 className="mt-1 text-[26px] leading-tight font-semibold tracking-[-0.02em] text-wp-dark">
+        {row.already_present ? "You’re already checked in" : "You’re checked in"}
+      </h1>
+      <p className="mt-2 text-[17px] text-ink">{row.attendee_name}</p>
 
-        {phase === "loading" && (
-          <p className="text-center text-[#646970]">Checking you in…</p>
-        )}
+      {row.collect_username ? (
+        <HandleForm token={token} />
+      ) : (
+        <p className="mt-6 text-[15px] text-ink-muted">
+          That&rsquo;s everything — you can close this page.
+        </p>
+      )}
+    </Shell>
+  );
+}
 
-        {phase === "invalid" && (
-          <div className="bg-white border border-[#dee4ff] rounded-2xl p-6 text-center">
-            <h1 className="text-lg font-semibold text-[#1a1919] mb-2">
-              This QR code is not recognised
-            </h1>
-            <p className="text-sm text-[#40464d]">
-              Head to the help desk and a volunteer will check you in.
-            </p>
-          </div>
-        )}
-
-        {phase === "ready" && (
-          <>
-            <div className="bg-white border border-[#dee4ff] rounded-2xl p-6 text-center">
-              <div
-                aria-hidden
-                className="w-12 h-12 rounded-full bg-[#3858e9] text-white grid place-items-center mx-auto mb-4 text-2xl leading-none"
-              >
-                ✓
-              </div>
-              <h1 className="text-2xl font-bold text-[#1a1919] leading-tight break-words">
-                {wasAlready ? `Already in, ${firstName}` : `You're in, ${firstName}`}
-              </h1>
-              <p className="text-sm text-[#40464d] mt-2">
-                {wasAlready
-                  ? "Your attendance was recorded earlier."
-                  : "Attendance recorded. Enjoy Campus Connect."}
-              </p>
-            </div>
-
-            <div className="bg-white border border-[#dee4ff] rounded-2xl p-6 mt-4">
-              {saved ? (
-                <>
-                  <p className="text-sm text-[#40464d]">Your WordPress.org username</p>
-                  <p className="text-xl font-semibold text-[#1a1919] mt-1 break-all">
-                    @{saved}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setSaved(null)}
-                    className="mt-4 text-sm font-semibold text-[#3858e9] underline underline-offset-4"
-                  >
-                    Change it
-                  </button>
-                </>
-              ) : (
-                <form onSubmit={save} noValidate>
-                  <label
-                    htmlFor="wp"
-                    className="block text-base font-semibold text-[#1a1919]"
-                  >
-                    What is your WordPress.org username?
-                  </label>
-                  <p className="text-sm text-[#40464d] mt-1 mb-4">
-                    It lets the team credit you and keep you in the loop after today.
-                  </p>
-
-                  <div className="flex items-stretch rounded-lg border border-[#c9d4f9] bg-white overflow-hidden focus-within:border-[#3858e9] focus-within:ring-2 focus-within:ring-[#3858e9]/25">
-                    <span
-                      aria-hidden
-                      className="grid place-items-center px-3 text-[#646970] bg-[#f5f7fa] border-r border-[#dee4ff] select-none"
-                    >
-                      @
-                    </span>
-                    <input
-                      id="wp"
-                      autoFocus
-                      value={handle}
-                      onChange={(e) => {
-                        setHandle(e.target.value);
-                        setError(null);
-                      }}
-                      placeholder="yourname"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      enterKeyHint="done"
-                      className="flex-1 min-w-0 px-3 py-3 text-base text-[#1a1919] outline-none"
-                    />
-                  </div>
-
-                  {error && <p className="text-sm text-[#f15a25] mt-2">{error}</p>}
-
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full mt-4 bg-[#3858e9] text-white font-semibold rounded-lg py-3.5 disabled:opacity-60"
-                  >
-                    {saving ? "Saving…" : "Save username"}
-                  </button>
-                  <p className="text-xs text-[#646970] mt-3 text-center">
-                    No account yet? You are still checked in — close this page.
-                  </p>
-                </form>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="flex-1 px-5 py-12">
+      <div className="mx-auto w-full max-w-sm">{children}</div>
     </main>
   );
 }
