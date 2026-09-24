@@ -3,9 +3,12 @@
   Supabase dashboard → Authentication → Emails → "Confirm signup".
 
   The link goes to /auth/confirm with a token_hash, not {{ .ConfirmationURL }},
-  so it works on any device (see app/auth/confirm/route.ts). {{ .RedirectTo }}
-  is where the person was heading, often an invite link; urlquery keeps its
-  own query string intact.
+  so it works on any device (see app/auth/confirm/route.ts).
+
+  {{ .RedirectTo }} is already "<the site they signed up on>/auth/confirm?next=…"
+  (see app/signup/actions.ts), so a preview deploy's sign-up confirms on that
+  preview rather than on production. It must match a Redirect URL in Supabase,
+  or Supabase swaps in the Site URL and this link breaks.
 -->
 <div style="background:#f2f6ff;padding:32px 16px;font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="max-width:440px;margin:0 auto;background:#ffffff;border:1px solid #c9d4f9;border-radius:12px;padding:32px 28px;">
@@ -15,7 +18,7 @@
       Someone, hopefully you, created an account with this address. Confirm it to finish signing up.
     </p>
     <p style="margin:28px 0 0;">
-      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next={{ .RedirectTo | urlquery }}"
+      <a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=email"
          style="display:inline-block;background:#3858e9;color:#ffffff;text-decoration:none;font-size:16px;font-weight:500;padding:13px 22px;border-radius:8px;">
         Confirm email
       </a>

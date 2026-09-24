@@ -11,13 +11,14 @@ export type SignupState =
 
 const MIN_PASSWORD = 8;
 
-/** Where the confirmation link should land them once it has been verified.
- *  Carried to Supabase as a full url, because that is what `emailRedirectTo`
- *  takes, and brought back to a path by /auth/confirm. */
+/** The confirmation link, minus its token. Built on the origin the person
+ *  signed up on, so a sign-up on a preview deploy (or locally) confirms there
+ *  too — building it from Supabase's Site URL would send every preview test
+ *  to production. The email template appends token_hash and type. */
 async function redirectTarget(next: string): Promise<string> {
   const h = await headers();
   const origin = h.get("origin") ?? `https://${h.get("host")}`;
-  return `${origin}${next}`;
+  return `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
 }
 
 export async function signUp(_prev: SignupState, formData: FormData): Promise<SignupState> {
