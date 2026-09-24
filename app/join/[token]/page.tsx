@@ -100,7 +100,7 @@ export default async function JoinPage({
           <p className="mt-3 text-[13px] leading-relaxed text-ink-faint">
             {invite.email
               ? `This invite only works for ${invite.email}.`
-              : "Signing in creates your account if you don’t have one."}
+              : "No account yet? You can create one on the next screen."}
           </p>
         </>
       )}

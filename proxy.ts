@@ -47,7 +47,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-const PUBLIC_PREFIXES = ["/login", "/auth", "/join", "/checkin", "/api/checkin", "/s/"];
+const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/join", "/checkin", "/api/checkin", "/s/"];
 
 function isPublic(pathname: string): boolean {
   if (pathname === "/") return true;

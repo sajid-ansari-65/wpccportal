@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signIn } from "./actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -70,9 +71,14 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="mt-8 text-[13px] leading-relaxed text-ink-faint">
-          Volunteers join through the invite link their organiser sends, which
-          creates the account on first use.
+        <p className="mt-8 text-[14px] text-ink-muted">
+          New here?{" "}
+          <Link
+            href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+            className="font-medium text-wp underline-offset-2 hover:underline"
+          >
+            Create an account
+          </Link>
         </p>
       </div>
     </main>

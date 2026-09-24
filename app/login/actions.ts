@@ -2,12 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safeNext";
 
-/** Only ever redirect within this app. An open redirect on a login page hands
- *  an attacker a credible-looking link to anywhere. */
-function safeNext(raw: FormDataEntryValue | null): string {
-  const v = typeof raw === "string" ? raw : "";
-  return v.startsWith("/") && !v.startsWith("//") ? v : "/dashboard";
+/** Back to the form with a message, keeping where they were headed — losing
+ *  `next` on a typo would drop someone arriving from an invite link. */
+function backToLogin(message: string, next: string): never {
+  const q = new URLSearchParams({ error: message });
+  if (next !== "/dashboard") q.set("next", next);
+  redirect(`/login?${q}`);
 }
 
 export async function signIn(formData: FormData) {
@@ -16,16 +18,24 @@ export async function signIn(formData: FormData) {
   const next = safeNext(formData.get("next"));
 
   if (!email || !password) {
-    redirect(`/login?error=${encodeURIComponent("Enter your email and password.")}`);
+    backToLogin("Enter your email and password.", next);
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
+  // Only reachable with the right password, so it tells a stranger nothing
+  // they could not already find out by signing in.
+  if (error?.code === "email_not_confirmed") {
+    const q = new URLSearchParams({ confirm: "1" });
+    if (next !== "/dashboard") q.set("next", next);
+    redirect(`/signup?${q}`);
+  }
+
   if (error) {
     // Deliberately not "no account with that email" — that tells anyone who
     // asks which addresses are registered.
-    redirect(`/login?error=${encodeURIComponent("That email and password don't match.")}`);
+    backToLogin("That email and password don't match.", next);
   }
 
   redirect(next);
