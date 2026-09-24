@@ -205,6 +205,7 @@ export default function AttendanceList({
                       </span>
                       {r.present && <PresentTag />}
                     </span>
+                    {r.email && <EmailLine email={r.email} />}
                     <span className="mt-0.5 flex items-baseline justify-between gap-2">
                       <span className="truncate text-[13px] text-ink-faint">
                         {r.institution ?? "No college recorded"}
@@ -224,8 +225,11 @@ export default function AttendanceList({
                     {/* Wraps rather than truncates. The name is the one thing
                         being matched against a face in the queue; a tidy row is
                         not worth hiding half of it. */}
-                    <span className="min-w-0 text-[16px] font-medium text-ink">
-                      {r.name}
+                    <span className="min-w-0">
+                      <span className="block text-[16px] font-medium text-ink">
+                        {r.name}
+                      </span>
+                      {r.email && <EmailLine email={r.email} />}
                     </span>
                     <span className="flex shrink-0 items-baseline gap-3">
                       {r.year && (
@@ -259,6 +263,15 @@ function PresentTag() {
     <span className="shrink-0 text-[13px] font-medium text-wp-dark">
       ✓ Present
     </span>
+  );
+}
+
+/** Two people can share a name; the email is what tells them apart at the
+ *  desk. Truncates rather than wraps — the start of an address is the part
+ *  anyone reads out. */
+function EmailLine({ email }: { email: string }) {
+  return (
+    <span className="mt-0.5 block truncate text-[13px] text-ink-muted">{email}</span>
   );
 }
 
@@ -358,6 +371,9 @@ function ConfirmDialog({
             </>
           )}
         </p>
+        {pending.row.email && (
+          <p className="mt-1 truncate text-[14px] text-ink-faint">{pending.row.email}</p>
+        )}
 
         <div className="mt-5 flex gap-2.5">
           <button
