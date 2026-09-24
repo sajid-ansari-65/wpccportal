@@ -9,18 +9,18 @@
 -- auth.users, so your login survives.
 --
 -- ─────────────────────────────────────────────────────────────────────────────
--- BEFORE RUNNING: set your email on the next line. The account must already
--- exist (Supabase → Authentication → Add user).
+-- BEFORE RUNNING: the owner's email is on the set_config line below. The
+-- account must already exist (Supabase → Authentication → Add user).
+--
+-- Runs as-is in the Supabase SQL Editor or in psql. An earlier version used
+-- a psql-only variable here, which the SQL Editor rejects as a syntax error.
 -- ─────────────────────────────────────────────────────────────────────────────
-\set owner_email 'admin@iamsajidansari.com'
 
 begin;
 
--- psql does not substitute :variables inside a dollar-quoted block, so the
--- address is handed in through a transaction-local setting instead. Writing
--- it the obvious way fails with "syntax error at or near :" -- which would
--- have happened here, on production, midway through the cutover.
-select set_config('seed.owner_email', :'owner_email', true);
+-- Handed to the DO block through a transaction-local setting, because a DO
+-- block cannot take parameters.
+select set_config('seed.owner_email', 'admin@iamsajidansari.com', true);
 
 do $$
 declare
